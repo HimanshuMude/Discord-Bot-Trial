@@ -4,20 +4,38 @@ require('dotenv').config();
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
-client.once(Events.ClientReady, () => {
-    console.log("Logged In!!!");
-});
-client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
 
-    const { commandName } = interaction;
 
-    if (commandName === 'ping') {
-        await interaction.reply('Pong!');
-    } else if (commandName === 'beep') {
-        await interaction.reply('Boop!');
+// client.once(Events.ClientReady, () => {
+//     console.log("Logged In!!!");
+// });
+// client.on(Events.InteractionCreate, async interaction => {
+//     if (!interaction.isChatInputCommand()) return;
+
+//     const { commandName } = interaction;
+
+//     if (commandName === 'ping') {
+//         await interaction.reply('Pong!');
+//     } else if (commandName === 'beep') {
+//         await interaction.reply('Boop!');
+//     }
+// });
+
+const eventsPath = path.join(__dirname, 'Events');
+const eventsFile = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+
+for (const file of eventsFile) {
+    const filePath = path.join(eventsPath, file);
+    const event = require(filePath);
+    if (event.once) {
+        client.once(event.name, (...args) => event.execute(...args));
     }
-});
+    else {
+        client.on(event.name, (...args) => event.execute(...args));
+    }
+
+}
+
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
@@ -31,21 +49,21 @@ for (const file of commandFiles) {
         console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
     }
 }
-client.on(Events.InteractionCreate, interaction => {
-    if (!interaction.isChatInputCommand()) return;
+// client.on(Events.InteractionCreate, async interaction => {
+//     if (!interaction.isChatInputCommand()) return;
 
-    const command = interaction.client.commands.get(interaction.commandName);
+//     const command = interaction.client.commands.get(interaction.commandName);
 
-    if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
-        return;
-    }
+//     if (!command) {
+//         console.error(`No command matching ${interaction.commandName} was found.`);
+//         return;
+//     }
 
-    try {
-        command.execute(interaction);
-    } catch (error) {
-        console.error(error);
-        interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
-    }
-});
+//     try {
+//         await command.execute(interaction);
+//     } catch (error) {
+//         console.error(error);
+//         await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+//     }
+// });
 client.login(process.env.TOKEN);
